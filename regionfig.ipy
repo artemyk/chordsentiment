@@ -1,0 +1,37 @@
+# Plot regional analyses of chords vs valence
+
+%run init.ipy
+
+plt.figure(figsize=(5.0,1))
+
+axeslist = []
+gs = gridspec.GridSpec(2, 3)
+axeslist.append(plt.subplot(gs[:,0]))
+
+col = 'Origin'
+cdf = lyrics_df[lyrics_df[col].isin(analysis_util.get_most_popular(metadata_df, col))]
+oh, oh_SE = analysis_util.get_sentiment_values(cdf, col)
+oh = oh.sort_values()
+plot_util.bar_plot(oh, 1.96*oh_SE)
+plt.xlabel('Valence')
+plt.title('Region Valence')
+
+axeslist.append(plt.subplot(gs[:,1]))
+
+cat_happiness, ch_SE = analysis_util.get_sentiment_values(cdf, [col, 'chordCategory'])
+cat_happiness = cat_happiness.unstack()    
+ch_SE         = ch_SE.unstack()
+
+diff_mm =  -(cat_happiness.minor - cat_happiness.major)
+se_mm = np.sqrt(ch_SE.major**2 + ch_SE.minor**2)
+
+plot_util.bar_plot(diff_mm.loc[oh.index.values]  , 1.96*se_mm  , True)
+plt.locator_params(axis='x',nbins=4)
+plt.gca().set_yticklabels([])
+plt.xlabel('Valence difference')
+plt.title('Major vs. Minor Valence')
+
+plot_util.labelsubplots(axeslist)
+
+plot_util.mysavefig('regionfig')
+

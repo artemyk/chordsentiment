@@ -1,0 +1,62 @@
+## Load files
+%run init.ipy
+
+CUR_FONT_SIZE=9
+## Compute
+
+top_chord_df = lyrics_df[lyrics_df.chordCategory.isin(CHORDCATS)] 
+grp_happiness, grp_happiness_se = analysis_util.get_sentiment_values(top_chord_df, ['chordCategory'])
+grp_happiness = grp_happiness.sort_values()
+
+
+
+allwords_df = analysis_util.get_allwords_df(lyrics_df)
+
+## Run plots and save
+
+axes_list = []
+
+plt.figure(figsize=(7.3,1.5))
+import matplotlib
+matplotlib.rcParams.update({'font.size':CUR_FONT_SIZE})
+
+gs = gridspec.GridSpec(1, 1+len(CHORDCATS)) # , hspace=0.6, wspace=0.5)
+
+ax=plt.subplot(gs[0]); axes_list += [ax,]
+print(grp_happiness)
+
+plot_util.bar_plot(grp_happiness, 1.96*grp_happiness_se, rotate=True) 
+plt.locator_params(axis='y',nbins=6)
+print([t.get_text() for t in ax.get_xticklabels()])
+ax.set_xticklabels([plot_util.titlecase(t._text) for t in ax.get_xticklabels()], 
+	rotation=45, ha='right', fontsize=CUR_FONT_SIZE)
+plt.xlabel('Chord category')
+plt.ylabel('Valence')
+
+
+
+wsaxes=[]
+for ndx, curcat in enumerate(CHORDCATS):
+    cax=plt.subplot(gs[ndx+1])
+    wsaxes.append(cax)
+    catdf = allwords_df[allwords_df.chordCategory == curcat]
+    plot_util.do_wordshift(catdf, allwords_df)
+    plt.title('%s' % (curcat[0].upper() + curcat[1:]))
+    #break
+plot_util.sharexlims(wsaxes)    
+xmin=min([0,]+[cax.get_xlim()[0] for cax in wsaxes])
+xmax=max([0,]+[cax.get_xlim()[1] for cax in wsaxes])
+
+for cax in wsaxes:
+    cax.set_xlim(xmin, xmax)
+    
+axes_list += wsaxes
+
+# plot_util.wordshift_legend(wsaxes[0], -0.15, 0.6, bwidth=0.65)
+# plot_util.wordshift_legend(wsaxes[1], 0.62, 0.42, bwidth=0.65)
+
+plot_util.labelsubplots(axes_list, xoffset=[None,]+[-5,]*(len(wsaxes)))
+
+plot_util.mysavefig('chordcats')
+
+print('Done')

@@ -1,0 +1,117 @@
+# Performs model selection to analyze factors which determine chord valence
+%run init.ipy
+
+FACECOLOR=0.4*np.ones(3)
+def barplot(df, kind, kws={}):
+    df.plot(kind=kind, ax=plt.gca(), facecolor=FACECOLOR, **kws)
+    plot_util.despine()
+
+
+from statsmodels.tools import eval_measures
+lyrics_df['mean_valence'] = lyrics_df.happiness_values.apply(np.mean)
+
+import itertools
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+
+predictors = ['chordCategory',
+              'Origin',
+              'Genre',
+              'Era']
+joined_df_valid = lyrics_df[(lyrics_df.chordCategory != 'INVALID') & (~pd.isnull(lyrics_df.mean_valence))]
+
+popular_values = {}
+for p in predictors:
+    vcounts = joined_df_valid[p].value_counts()
+    if p == 'Genre':
+        #popular_values[p] = vcounts[0:(5 if p=='chordCategory' else 12)].index.values
+        popular_values[p] = vcounts[0:20].index.values
+
+    elif p == 'chordCategory':
+        popular_values[p] = CHORDCATS
+        
+    else:
+        popular_values[p] = vcounts[vcounts>600].index.values
+
+#print(popular_values)
+
+df=joined_df_valid.copy()
+for k, vals in popular_values.items():
+    df = df[df[k].isin(vals)]
+
+best_bic, best_model = None, None
+saved_models = {}
+for modelsize in range(1,len(predictors)+1):
+    for model in itertools.combinations(predictors, modelsize):
+        model_spec = 'mean_valence ~ ' + " + ".join('C(%s)' % v for v in model)  #Specify C for Categorical
+        lm=ols(model_spec, data=df).fit()
+        print('bic=%0.2f aic=%0.2f model: [%s]' % (lm.bic, lm.aic, model_spec))
+        saved_models[tuple(model)] = lm
+
+
+from statsmodels.tools import eval_measures
+def scorefunc(cm):
+    return eval_measures.bic(cm.llf, cm.nobs, cm.df_model)
+modelscores = [ (m[0] , scorefunc(m[1]) ) for m in saved_models.items()]
+
+sortedmodels = sorted(modelscores, key=lambda x: x[1])
+best_model_str, best_model_score = sortedmodels[0]
+print("BEST MODEL: [%s]" % str(best_model_str))
+print()
+print(saved_models[best_model_str].summary())
+
+
+##
+
+totalvar = df.mean_valence.var()
+explainedvar = {}
+for pred in ['Genre','Era','Origin','chordCategory']: 
+    model_spec = 'mean_valence ~ C(%s)' % pred
+    lm=ols(model_spec, data=df).fit()
+    evar = 100* (1.0 - lm.resid.var() / totalvar)
+    print(pred, lm.resid.var(), evar)
+    explainedvar[pred] = evar
+    
+
+fig=plt.figure(figsize=(3.5,1.5))
+gs= gridspec.GridSpec(1,2)
+
+varnames = {'chordCategory': 'Chord cat'}
+axes_list = []
+axes_list.append(plt.subplot(gs[0]))
+evardf = pd.Series({varnames.get(n,n):v for n, v in explainedvar.items()}).sort_values()
+evardf =evardf.iloc[::-1]
+barplot(evardf,kind='bar')
+plt.ylabel('% Variance explained')
+plt.xticks(rotation=45, ha='right')
+
+for modendx, mode in enumerate(['aic',]):
+    axes_list.append(plt.subplot(gs[1+modendx]))
+    cfunc = lambda cm: getattr(eval_measures, mode)(cm.llf, cm.nobs, cm.df_model)
+    modelscores = [ (cvars ,cfunc(cm) ) for cvars, cm in saved_models.items()]
+    sortedmodels = sorted(modelscores, key=lambda x: x[1])
+    
+
+    allsizes = range(4)
+    szscores = [ 0 for _ in allsizes ]
+    szlabels = [ "" for _ in allsizes ] 
+    for csize in allsizes:
+        for cvars, cscores in sortedmodels:
+            if len(cvars) == csize+1:
+                print(csize, cvars, cscores)
+                szscores[csize] = cscores
+                szlabels[csize] = ",".join([varnames.get(v,v) for v in cvars])
+                break
+    plotdf = pd.DataFrame(szscores)
+    barplot(plotdf,kind='bar', kws=dict(legend=False))
+    offset = 100
+    print(szscores)
+    plt.ylim(min(szscores)-offset, max(szscores)+offset)
+    plt.xticks(allsizes, szlabels, rotation=45, ha='right')
+    plt.ylabel(mode.upper())
+
+plot_util.labelsubplots(axes_list)
+
+plot_util.mysavefig('modelcomparison')
+
+

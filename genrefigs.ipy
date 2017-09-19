@@ -1,0 +1,47 @@
+# Create plots of chord vs valence for different genres
+%run init.ipy
+
+allwords_df = analysis_util.get_allwords_df(lyrics_df)
+
+plt.figure(figsize=(5,4))
+
+axeslist = []
+gs = gridspec.GridSpec(2, 3, hspace=0.5, width_ratios=[1,1,0.6])
+axeslist.append(plt.subplot(gs[:,0]))
+
+col = 'Genre'
+cdf = lyrics_df[lyrics_df[col].isin(analysis_util.get_most_popular(metadata_df, col, K=20))]
+oh, oh_SE = analysis_util.get_sentiment_values(cdf, col)
+oh = oh.sort_values()
+plot_util.bar_plot(oh, 1.96*oh_SE)
+plt.xlabel('Valence')
+plt.title('Genre Valence')
+plt.locator_params(axis='x',nbins=6)
+
+axeslist.append(plt.subplot(gs[:,1]))
+
+cat_happiness, ch_SE = analysis_util.get_sentiment_values(cdf, [col, 'chordCategory'])
+cat_happiness = cat_happiness.unstack()    
+ch_SE         = ch_SE.unstack()
+
+diff_mm =  -(cat_happiness.minor - cat_happiness.major)
+se_mm = np.sqrt(ch_SE.major**2 + ch_SE.minor**2)
+
+plot_util.bar_plot(diff_mm.loc[oh.index.values]  , 1.96*se_mm  , True)
+plt.gca().set_yticklabels([])
+plt.xlabel('Valence difference')
+plt.title('Major vs. Minor Valence')
+
+cax = plt.subplot(gs[0,2])
+axeslist.append(cax)
+plot_util.do_wordshift(allwords_df[allwords_df.Genre == 'Religious'], allwords_df)
+plt.title('Religious Genre')
+
+axeslist.append(plt.subplot(gs[1,2]))
+plot_util.do_wordshift(allwords_df[allwords_df.Genre == 'Punk'], allwords_df)
+plt.title('Punk Genre')
+
+plot_util.labelsubplots(axeslist)
+
+plot_util.mysavefig('genrefig')
+

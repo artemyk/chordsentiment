@@ -1,0 +1,20 @@
+# Create plots of prevalence of different chord categories
+%run init.ipy
+
+FACECOLOR=0.4*np.ones(3)
+
+plt.figure(figsize=(2,1.25))
+
+print('Total # chords:', len(lyrics_df))
+vcounts = lyrics_df.chordCategory.value_counts()
+#vcounts = vcounts.iloc[::-1]
+vcounts.plot(kind='bar', ax=plt.gca(), facecolor=FACECOLOR, logy=True)
+plot_util.despine()
+print(vcounts)
+plt.gca().set_xticklabels([plot_util.titlecase(t._text) for t in plt.gca().get_xticklabels()]) #, ha='right')
+plt.ylabel('Counts')
+plt.xlabel('Chord Category')
+plt.tick_params(axis='y',which='major', length=2) 
+plt.tick_params(axis='x',which='major', length=0) 
+
+plot_util.mysavefig('catprevalence')

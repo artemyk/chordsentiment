@@ -1,0 +1,35 @@
+%load_ext autoreload
+%autoreload 2
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.gridspec as gridspec
+from ast import literal_eval
+
+try:
+   %matplotlib inline
+except:
+   print("Can't matplotlib inline")
+   pass
+
+import numpy as np
+import pandas as pd
+import matplotlib.pylab as plt
+
+from config import *
+import plot_util
+import analysis_util
+
+
+metadata_df = pd.read_csv('data/metadata.csv')
+lyrics_df   = pd.read_csv('data/chordwords.csv')
+lyrics_df   = lyrics_df.merge(metadata_df, 'left', on='songID') 
+
+print("Mapping happiness...")
+lyrics_df['WordCount'] = lyrics_df.WordCount.apply(literal_eval)
+lyrics_df['happiness_values'] = lyrics_df.WordCount.apply(analysis_util.map_happiness_vals)
+print("Done")
+
+
+CHORDCATS   = ['major','minor','dom7','minor7','major7']
+
+

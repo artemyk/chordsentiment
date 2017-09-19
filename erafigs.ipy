@@ -1,0 +1,107 @@
+# Plot historical analysis of chords vs valence
+%run init.ipy
+
+CUR_FONT_SIZE=9
+import matplotlib
+matplotlib.rcParams.update({'font.size':CUR_FONT_SIZE})
+
+top_genres = metadata_df.Genre.value_counts().index.values.tolist()
+combined = {}
+top_genre_chords = lyrics_df.copy()
+top_genre_chords['topgenre'] = 'OTHER'
+cix = top_genre_chords.Genre.isin(top_genres)
+top_genre_chords.topgenre[cix] = top_genre_chords.Genre[cix]
+
+saved_eradecade_majorminor = {}
+for decade in [1950,1960,1970,1980,1990,2000,2010]:
+    ds = "%d's"% decade
+    print("Doing", ds)
+    decade_genre = top_genre_chords[top_genre_chords.Era==ds]
+    decade_genre_freqs= (decade_genre.topgenre.value_counts() / len(decade_genre) )
+
+    cat_happiness, ch_SE = analysis_util.get_sentiment_values(decade_genre, ['topgenre','chordCategory'])
+    cu = cat_happiness.unstack()
+
+    df=((cu.major - cu.minor)*decade_genre_freqs).dropna().sort_values()
+    saved_eradecade_majorminor[decade] = (cu.major * decade_genre_freqs, cu.minor * decade_genre_freqs)
+    combined[ds] = df
+plot_df_raw = pd.DataFrame(combined).T
+
+
+def squeeze_axis_vert():
+    cax = plt.gca()
+    pos = cax.get_position()
+    squeezeh = pos.height * 0.2
+    cax.set_position([pos.x0, pos.y0 + squeezeh, pos.width, pos.height-squeezeh])
+
+plt.figure(figsize=(7.3,1.75))
+
+axeslist = []
+gs = gridspec.GridSpec(1, 3, wspace=0.4, hspace=0.65)
+axeslist.append(plt.subplot(gs[0,0]))
+
+col = 'Era'
+popvals = analysis_util.get_most_popular(metadata_df, col)
+cdf = lyrics_df[lyrics_df[col].isin(popvals)]
+oh, oh_SE = analysis_util.get_sentiment_values(cdf, col)
+plot_util.bar_plot(oh, 1.96*oh_SE, rotate=True, connectline=True)
+plt.ylabel('Valence')
+plt.title('Era Valence')
+plt.setp(plt.xticks()[1], rotation=45,ha='right') 
+squeeze_axis_vert()
+plt.xlabel('Era')
+
+
+axeslist.append(plt.subplot(gs[0,1]))
+cat_happiness, ch_SE = analysis_util.get_sentiment_values(cdf, [col, 'chordCategory'])
+cat_happiness = cat_happiness.unstack()    
+ch_SE         = ch_SE.unstack()
+
+diff_mm =  -(cat_happiness.minor - cat_happiness.major)
+se_mm = np.sqrt(ch_SE.major**2 + ch_SE.minor**2)
+
+plot_util.bar_plot(diff_mm.loc[oh.index.values]  , 1.96*se_mm  , True, rotate=True, connectline=True)
+plt.ylabel('Valence difference  ')
+plt.title('Major vs. Minor Valence')
+plt.setp(plt.xticks()[1], rotation=45,ha='right') 
+squeeze_axis_vert()
+plt.xlabel('Era')
+
+
+cax = plt.subplot(gs[0,2])
+axeslist.append(cax)
+
+
+pop_eras_cats = cdf.copy()
+pop_eras_cats[col] = pop_eras_cats[col].astype('str')
+pop_eras_cats['ChordCat'] = 'OTHER'
+ixs = pop_eras_cats.chordCategory.isin(CHORDCATS)
+pop_eras_cats.ChordCat[ixs] = pop_eras_cats.chordCategory[ixs]
+props = pop_eras_cats[[col,'ChordCat']].groupby(col).apply(lambda x: x.ChordCat.value_counts() / len(x))
+
+props_us = props[props>0].unstack()
+props_us = props_us[CHORDCATS]
+
+for c in props_us.columns:
+    props_us.rename(columns={c:plot_util.titlecase(c)}, inplace=True)
+
+props_us.plot(kind='line', linewidth=plot_util.LINEWIDTH, ax=cax, sharex=False, sharey=False,logy=True)
+getattr(plt, 'xticks')(range(len(props_us)), props_us.index.values.tolist(), rotation=45, ha='right')
+plt.ylim([10^-3, 1])
+plt.xlabel('Era')
+plt.tick_params(axis='y',which='major', length=2) 
+
+squeeze_axis_vert()
+
+pos = cax.get_position()
+cax.set_position([pos.x0, pos.y0, pos.width*0.7, pos.height])
+cax.legend(loc='right',bbox_to_anchor=(1.75,0.5), handlelength=1)
+
+plt.ylabel('Proportion chords ')
+plt.xlabel('Era')
+plt.title('Chord Category Usage')
+
+plot_util.labelsubplots(axeslist, xoffset=-30)
+
+plot_util.mysavefig('erafig')
+
