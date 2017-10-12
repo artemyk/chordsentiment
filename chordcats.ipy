@@ -1,6 +1,8 @@
 ## Load files
 %run init.ipy
 
+allwords_df = analysis_util.get_allwords_df(lyrics_df)
+
 CUR_FONT_SIZE=9
 ## Compute
 
@@ -9,9 +11,6 @@ grp_happiness, grp_happiness_se = analysis_util.get_sentiment_values(top_chord_d
 grp_happiness = grp_happiness.sort_values()
 
 
-
-allwords_df = analysis_util.get_allwords_df(lyrics_df)
-
 ## Run plots and save
 
 axes_list = []
@@ -19,11 +18,11 @@ axes_list = []
 plt.figure(figsize=(7.3,1.5))
 import matplotlib
 matplotlib.rcParams.update({'font.size':CUR_FONT_SIZE})
+matplotlib.rcParams.update({'axes.labelsize':CUR_FONT_SIZE+1})
 
-gs = gridspec.GridSpec(1, 1+len(CHORDCATS)) # , hspace=0.6, wspace=0.5)
+gs = gridspec.GridSpec(1, 1+len(CHORDCATS))
 
 ax=plt.subplot(gs[0]); axes_list += [ax,]
-print(grp_happiness)
 
 plot_util.bar_plot(grp_happiness, 1.96*grp_happiness_se, rotate=True) 
 plt.locator_params(axis='y',nbins=6)
