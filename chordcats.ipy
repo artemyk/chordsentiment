@@ -42,7 +42,7 @@ for ndx, curcat in enumerate(CHORDCATS):
     catdf = allwords_df[allwords_df.chordCategory == curcat]
     plot_util.do_wordshift(catdf, allwords_df)
     plt.title('%s' % (curcat[0].upper() + curcat[1:]))
-    #break
+
 plot_util.sharexlims(wsaxes)    
 xmin=min([0,]+[cax.get_xlim()[0] for cax in wsaxes])
 xmax=max([0,]+[cax.get_xlim()[1] for cax in wsaxes])

@@ -122,8 +122,8 @@ def wordshift_plot(topvals, xpadding=0.0, textopts={}):
 
     is_pos = np.array((topvals.ws >= 0).tolist())
 
-    kw = {'color': topvals.cols} if 'cols' in topvals.columns else {}
-    topvals.ws.plot(kind='barh', ax=plt.gca(), edgecolor='None',  width=.4, grid=False, **kw)
+    kw = {'color': topvals.cols.values.tolist()} if 'cols' in topvals.columns else {}
+    plt.barh(range(len(topvals)), topvals.ws.values, edgecolor='None', height=.4, **kw)
 
     plt.vlines(0, -20, 20, color='k', lw=LINEWIDTH)
     xmin, xmax = None, None
