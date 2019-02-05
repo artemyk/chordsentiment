@@ -6,7 +6,7 @@ Artemy Kolchinsky, Nakul Dhande, Kengjeun Park, Yong-Yeol Ahn
 First, be sure to make a `data/` and a `figures/` subdirectory in this repository.
 
 Then, download the CSV files provided at 
-https://figshare.com/s/0ca9d1bdb8fd67896547 and place them into the `data/` directory.
+https://figshare.com/articles/The_Minor_Fall_the_Major_Lift_Inferring_Emotional_Valence_of_Musical_Chords_through_Lyrics/5413060/1 and place them into the `data/` directory.
 
 Finally, to generate figures, run the `*.ipy` files using `ipython3`, e.g.
 ```
