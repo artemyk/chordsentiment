@@ -7,12 +7,12 @@ import matplotlib
 
 LINEWIDTH=0.5
 
-c1 = plt.rcParams['axes.color_cycle'][0]
-c2 = plt.rcParams['axes.color_cycle'][1]
+c1 = list(plt.rcParams['axes.prop_cycle'])[0]['color']
+c2 = list(plt.rcParams['axes.prop_cycle'])[1]['color']
 
 
 matplotlib.rcParams.update({
-    'font.family'    :'Myriad Pro',
+    'font.family'    :'sans-serif',
     'font.size'      :7,
     'axes.labelsize' :'large',
     'axes.titlesize' :'large',
@@ -113,8 +113,8 @@ def do_wordshift(catdf, allwords_df, numtop=10, grpby='word'):
     plt.xlabel('Contribution %')
 
 def wordshift_plot(topvals, xpadding=0.0, textopts={}):
-    c1 = plt.rcParams['axes.color_cycle'][0]
-    c2 = plt.rcParams['axes.color_cycle'][1]
+    c1 = list(plt.rcParams['axes.prop_cycle'])[0]['color']
+    c2 = list(plt.rcParams['axes.prop_cycle'])[1]['color']
 
     all_ixs = np.arange(len(topvals))
 
@@ -206,7 +206,7 @@ def bar_plot(pdf, err=None, plot0=False, connectline=False, rotate=False, faceco
         plt.errorbar(df2[xcol], df2[ycol], fmt='None', capthick=linewidth, capsize=3,
             linewidth=linewidth, ecolor=edgecolor, 
             #ax=ax, 
-            grid=plt.rcParams['axes.grid'], **{pfx+'err':err.loc[df2.index.values]})
+            **{pfx+'err':err.loc[df2.index.values]})
 
     limfunc = getattr(plt, pfx+'lim')
     lims = limfunc()
@@ -270,5 +270,4 @@ def mysavefig(fname):
     bname = PLOTOUTPUTDIR + fname + '.pdf'
     print("Saving to %s" % bname)
     plt.savefig(bname, dpi=300, bbox_inches='tight')
-
-
+    
